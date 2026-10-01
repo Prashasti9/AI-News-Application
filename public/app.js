@@ -144,7 +144,7 @@ function cardFor(a) {
   footer.href = a.url;
   footer.append('Read the full story at ', el('b', { text: a.sourceName }), ' →');
 
-  const hasDeep = a.whyItMatters || a.context || a.keyPoints?.length;
+  const hasDeep = a.whyItMatters || a.context || a.keyPoints?.length || a.coverage?.length;
   const deepBtn = $('.deep', node);
   if (hasDeep) deepBtn.onclick = () => openStory(a);
   else deepBtn.remove();
@@ -515,9 +515,7 @@ function buildSettings() {
   fillPrefsForm(saved);
   $('#hideRead').checked = state.hideRead;
   const lr = state.meta.lastRefresh;
-  $('#aboutLine').textContent = `Briefs written by ${state.meta.claude ? 'Claude' : 'extractive summaries (add an Anthropic API key for Claude briefs)'}${
-    lr ? ` · last updated ${timeAgo(lr.at)} from ${lr.sources} sources` : ''
-  }.`;
+  $('#aboutLine').textContent = lr ? `Last updated ${timeAgo(lr.at)} from ${lr.sources} sources.` : '';
 }
 
 // ---------- boot ----------
@@ -530,7 +528,7 @@ async function openDeepLink() {
     state.items = [a, ...state.items.filter((x) => x.id !== a.id)];
     renderFeed();
     feedEl.scrollTop = 0;
-    if (a.whyItMatters || a.context) openStory(a);
+    if (a.whyItMatters || a.context || a.keyPoints?.length || a.coverage?.length) openStory(a);
   } catch {
     // story expired
   }

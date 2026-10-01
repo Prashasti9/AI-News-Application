@@ -1,6 +1,6 @@
-// Heuristics that run before (and, without an API key, instead of) Claude:
-// is this about AI at all, which topic is it, which stories are duplicates,
-// and how should the feed be ranked.
+// Heuristics for deciding what counts as AI news: is this about AI at all,
+// which topic is it, which stories are duplicates, and how should the feed be
+// ranked.
 
 export const CATEGORIES = {
   models: 'Models',
@@ -17,7 +17,8 @@ const AI_TERMS = [
   [/\b(artificial intelligence|machine learning|deep learning|neural net(work)?s?|generative ai|gen ?ai)\b/i, 3],
   [/\b(llms?|large language models?|foundation models?|frontier models?|language models?|multimodal|diffusion models?|transformers?)\b/i, 3],
   [/\b(chatgpt|gpt-?\d[\w.]*|openai|anthropic|claude|gemini|deepmind|llama|mistral|deepseek|qwen|grok|xai|copilot|midjourney|stable diffusion|perplexity|hugging ?face|sora|veo)\b/i, 3],
-  [/\b(ai|a\.i\.)\b/, 2],
+  // Case-sensitive on purpose: "AI" as a word, not "ai" inside other text.
+  [/\bAI\b|\bA\.I\./, 2],
   [/\b(agents?|agentic|reasoning models?|fine-?tun\w*|rlhf|reinforcement learning|inference|embeddings?|rag|retrieval-augmented|tokens?|benchmarks?|evals?|alignment|interpretability|context window|prompt\w*)\b/i, 1],
   [/\b(gpus?|tpus?|nvidia|h100|h200|b200|blackwell|accelerators?|data ?cent(er|re)s?)\b/i, 1],
 ];
@@ -102,7 +103,7 @@ export function clusterItems(items, threshold = 0.6) {
   return clusters.map((c) => c.items.map(({ tokens, ...rest }) => rest));
 }
 
-/** Pre-Claude priority: decides which new stories get a brief first. */
+/** Cheap priority score: decides which new stories get a brief first. */
 export function preScore(item, coverage = 1) {
   const ageH = (Date.now() - new Date(item.publishedAt).getTime()) / 3600e3;
   const freshness = Math.max(0, 1 - ageH / 72);
@@ -114,19 +115,4 @@ export function rankScore(article, now = Date.now()) {
   const ageH = Math.max(0, (now - new Date(article.publishedAt).getTime()) / 3600e3);
   const importance = article.relevance + Math.log2(1 + (article.coverage?.length || 0)) * 1.5 + (article.sourceWeight || 1) * 0.5;
   return importance / Math.pow(ageH + 2, 0.8);
-}
-
-/** Extractive fallback brief: whole sentences up to ~60 words. */
-export function extractiveSummary(textBody, maxWords = 60) {
-  const sentences = String(textBody || '')
-    .replace(/\s+/g, ' ')
-    .match(/[^.!?]+[.!?]+(\s|$)/g) || [String(textBody || '')];
-  let out = '';
-  for (const s of sentences) {
-    const next = (out + ' ' + s.trim()).trim();
-    if (next.split(' ').length > maxWords) break;
-    out = next;
-  }
-  if (!out) out = String(textBody || '').split(/\s+/).slice(0, maxWords).join(' ') + '…';
-  return out;
 }

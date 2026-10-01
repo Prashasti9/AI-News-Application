@@ -17,15 +17,15 @@ const num = (v, d) => (v === undefined || v === '' || Number.isNaN(Number(v)) ? 
 export const config = {
   port: num(process.env.PORT, 3000),
   dataDir: path.resolve(process.env.DATA_DIR || './data'),
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
-  claudeModel: process.env.CLAUDE_MODEL || 'claude-opus-5-5',
-  claudeEffort: process.env.CLAUDE_EFFORT || 'medium',
+  // Postgres connection string. When set, all app data lives in the database
+  // instead of files, so free hosts that wipe the disk on restart still work.
+  databaseUrl: process.env.DATABASE_URL || '',
   refreshMinutes: num(process.env.REFRESH_MINUTES, 30),
   maxSummariesPerRun: num(process.env.MAX_SUMMARIES_PER_RUN, 15),
   // Daily edition: publish only the N most important stories once a day and
   // send one notification for them. 0 = continuous mode (every refresh).
   storiesPerDay: num(process.env.STORIES_PER_DAY, 5),
-  // How many top candidates Claude reviews to choose the day's stories.
+  // How many top candidates are fully read (article page fetched) to choose the day's stories.
   shortlistSize: num(process.env.SHORTLIST_SIZE, 15),
   editionHour: num(process.env.EDITION_HOUR, 8),
   editionTimezone: process.env.EDITION_TIMEZONE || 'UTC',

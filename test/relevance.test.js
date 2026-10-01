@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { aiKeywordScore, clusterItems, extractiveSummary, guessCategory, isAiRelated, rankScore } from '../server/relevance.js';
+import { aiKeywordScore, clusterItems, guessCategory, isAiRelated, rankScore } from '../server/relevance.js';
 
 const item = (title, extra = {}) => ({
   title,
@@ -17,6 +17,8 @@ test('AI keyword filter keeps AI stories and drops others', () => {
   assert.ok(isAiRelated(item('Anthropic ships a new Claude model for coding')));
   assert.ok(isAiRelated(item('Why GPUs are scarce again', { excerpt: 'Demand for training large language models keeps rising.' })));
   assert.ok(!isAiRelated(item('Ten gardening tips for autumn')));
+  assert.ok(isAiRelated(item('EU opens probe into AI chatbots')), 'uppercase AI counts');
+  assert.ok(!isAiRelated(item('Thai airline adds flights to Dubai')), 'ai inside words does not');
   assert.ok(aiKeywordScore('OpenAI raises $40B') > aiKeywordScore('Startup raises $40B'));
 });
 
@@ -36,13 +38,6 @@ test('clusters the same story from different outlets', () => {
   assert.equal(clusters.length, 2);
   const big = clusters.find((c) => c.length === 2);
   assert.equal(big[0].sourceId, 'b', 'highest-weight source leads the cluster');
-});
-
-test('extractive summary keeps whole sentences under the word cap', () => {
-  const body = 'One two three four five. '.repeat(20);
-  const s = extractiveSummary(body, 60);
-  assert.ok(s.split(' ').length <= 60);
-  assert.ok(s.endsWith('.'));
 });
 
 test('rank favours important fresh stories', () => {

@@ -4,8 +4,7 @@ import { config } from './config.js';
 import { refresh, runEditionIfDue } from './pipeline.js';
 import { DEFAULT_PREFS, LEVELS, getVapidPublicKey, initPush, sendTo } from './push.js';
 import { CATEGORIES, rankScore } from './relevance.js';
-import { articles, kv, subscriptions } from './store.js';
-import { claudeEnabled } from './summarize.js';
+import { articles, flush, initStore, kv, subscriptions } from './store.js';
 
 const app = express();
 app.use(express.json({ limit: '32kb' }));
@@ -46,7 +45,6 @@ app.get('/api/meta', (_req, res) => {
     levels: Object.fromEntries(Object.entries(LEVELS).map(([k, v]) => [k, v.label])),
     defaultPrefs: DEFAULT_PREFS,
     vapidPublicKey: getVapidPublicKey(),
-    claude: claudeEnabled(),
     lastRefresh: kv.get('last-refresh', null),
     edition: config.storiesPerDay > 0 ? { perDay: config.storiesPerDay, hour: config.editionHour, timezone: config.editionTimezone } : null,
   });
@@ -108,17 +106,20 @@ function cleanPrefs(p = {}) {
 }
 
 // Subscribing again with the same endpoint updates preferences.
-app.post('/api/subscribe', (req, res) => {
+app.post('/api/subscribe', async (req, res) => {
   const { subscription, prefs } = req.body || {};
   if (!validSubscription(subscription)) return res.status(400).json({ error: 'invalid subscription' });
   const saved = subscriptions.upsert({ endpoint: subscription.endpoint, keys: subscription.keys, prefs: cleanPrefs(prefs) });
+  await flush();
   res.json({ ok: true, prefs: saved.prefs });
 });
 
-app.post('/api/unsubscribe', (req, res) => {
+app.post('/api/unsubscribe', async (req, res) => {
   const endpoint = req.body?.endpoint;
   if (typeof endpoint !== 'string') return res.status(400).json({ error: 'endpoint required' });
-  res.json({ ok: subscriptions.remove(endpoint) });
+  const ok = subscriptions.remove(endpoint);
+  await flush();
+  res.json({ ok });
 });
 
 const lastTest = new Map();
@@ -155,9 +156,10 @@ app.get('/sw.js', (_req, res) => {
 });
 app.use(express.static(publicDir, { maxAge: '1h' }));
 
+await initStore();
 initPush();
 app.listen(config.port, () => {
-  console.log(`AI News Shorts on http://localhost:${config.port} (Claude briefs: ${claudeEnabled() ? config.claudeModel : 'off — set ANTHROPIC_API_KEY'})`);
+  console.log(`AI News Shorts on http://localhost:${config.port} (storage: ${config.databaseUrl ? 'Postgres' : config.dataDir})`);
   if (config.storiesPerDay > 0) console.log(`Daily edition: top ${config.storiesPerDay} stories at ${config.editionHour}:00 ${config.editionTimezone}`);
 });
 

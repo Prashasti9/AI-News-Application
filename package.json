@@ -1,7 +1,7 @@
 {
   "name": "ai-news-shorts",
   "version": "1.0.0",
-  "description": "Inshorts-style AI news app with push notifications, curated sources and Claude-written briefs",
+  "description": "Inshorts-style AI news app with push notifications, curated sources and free extractive summaries",
   "type": "module",
   "main": "server/index.js",
   "engines": {
@@ -16,9 +16,9 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.131.0",
     "express": "^5.2.1",
     "fast-xml-parser": "^5.11.2",
+    "pg": "^8.23.1",
     "web-push": "^3.6.7"
   }
 }

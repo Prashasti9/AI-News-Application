@@ -27,7 +27,7 @@ export function initPush(log = console) {
     else {
       ({ publicKey, privateKey } = webpush.generateVAPIDKeys());
       kv.set('vapid', { publicKey, privateKey });
-      log.info?.('[push] generated VAPID keys in data/vapid.json — set VAPID_* env vars in production');
+      log.info?.('[push] generated VAPID keys and saved them to storage. Set VAPID_* env vars to pin them.');
     }
   }
   webpush.setVapidDetails(config.vapid.subject, publicKey, privateKey);

@@ -3,7 +3,7 @@ import { fetchAll, fetchArticleDetails } from './feeds.js';
 import { notifyEdition, notifySubscribers } from './push.js';
 import { clusterItems, isAiRelated, preScore, similarity, titleTokens } from './relevance.js';
 import { loadSources } from './sources.js';
-import { articles, kv, seen } from './store.js';
+import { articles, flush, kv, seen } from './store.js';
 import { writeBrief } from './summarize.js';
 
 const FIRST_RUN_WINDOW_H = 48;
@@ -61,7 +61,7 @@ async function briefCluster(cluster, log) {
   const coverage = related
     .filter((r) => r.sourceId !== primary.sourceId)
     .map((r) => ({ sourceName: r.sourceName, url: r.url, title: r.title }));
-  const brief = await writeBrief({ ...primary, coverage }, body, related, log);
+  const brief = writeBrief({ ...primary, coverage }, body);
   return {
     id: primary.id,
     url: primary.url,
@@ -84,7 +84,6 @@ async function briefCluster(cluster, log) {
     relevance: brief.relevance,
     breaking: brief.breaking,
     isAiNews: brief.is_ai_news,
-    generatedBy: brief.generatedBy,
     briefedAt: new Date().toISOString(),
   };
 }
@@ -149,6 +148,7 @@ async function doRefresh(log) {
     push,
   };
   kv.set('last-refresh', stats);
+  await flush();
   log.info?.(`[refresh] fetched ${g.items.length}, new ${g.candidates.length}, briefed ${briefed.length}, published ${accepted.length} in ${stats.ms}ms`);
   return stats;
 }
@@ -209,6 +209,7 @@ async function doEdition(log) {
   };
   kv.set('last-edition', { date, at: stats.at });
   kv.set('last-refresh', stats);
+  await flush();
   log.info?.(`[edition ${date}] reviewed ${briefed.length} of ${g.candidates.length} new stories, published ${picked.length}`);
   return stats;
 }

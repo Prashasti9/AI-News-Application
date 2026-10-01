@@ -9,7 +9,7 @@ import { config } from './config.js';
 //   news      – reporting from AI desks of major outlets
 //   analysis  – expert newsletters and blogs (the "Medium-depth" reading)
 //   community – what practitioners are upvoting
-//   medium    – Medium tag feeds; high volume, so Claude's relevance bar applies
+//   medium    – Medium tag feeds; high volume, so the quality penalty applies
 export const DEFAULT_SOURCES = [
   // Labs
   { id: 'openai', name: 'OpenAI', url: 'https://openai.com/news/rss.xml', kind: 'lab', weight: 3 },

@@ -1,21 +1,29 @@
 # AI Shorts: AI news in 60 words
 
-An Inshorts-style app for AI news. Each story is one full-screen card with a 60-word summary; swipe up for the next one. If you want more, **Deep dive** opens why it matters, the key points, and a background explainer written to teach you something, much like a good Medium post. Important stories reach your phone as **push notifications**.
+An Inshorts-style app for AI news. Each story is one full-screen card with a ~60-word summary; swipe up for the next. Once a day the app picks the **5 most important AI stories** from ~30 trusted sources and sends **one** phone notification listing them.
 
-By default it runs as a **daily edition**: once a day it reviews the last 24 hours of AI news, publishes only the **5 most important stories**, and sends **one** notification listing them. To get every important story as it breaks, switch to continuous mode with `STORIES_PER_DAY=0`.
+It's a Progressive Web App (PWA): you install it from the browser to your home screen on Android or iPhone. It runs **entirely on free services**, with no paid APIs.
 
-It's a Progressive Web App (PWA). You install it from the browser onto your home screen. There's no app store and nothing to build for iOS or Android separately.
+## Features
 
-## What it does
-
-| | |
-|---|---|
-| **Sources** | ~30 curated feeds in four groups. **Labs:** OpenAI, Google DeepMind, Google Research, Microsoft Research, NVIDIA, Hugging Face, BAIR. **News desks:** MIT Tech Review, The Verge, TechCrunch, Ars Technica, WIRED, VentureBeat, The Decoder. **Expert analysis:** Import AI, Simon Willison, Interconnects, Latent Space, Ahead of AI, One Useful Thing, The Gradient, Lil'Log, Chip Huyen. **Community and Medium:** Hacker News (150+ points only) and Medium's AI, LLM and ML tags. |
-| **Relevance** | 1. A keyword filter drops non-AI items from general feeds.<br>2. When several outlets cover the same story, it's merged into one card ("+2 sources").<br>3. Claude rates every story 0–10 for importance to someone who follows AI closely. Anything under `MIN_RELEVANCE` (default 5) is hidden, which removes Medium listicles, SEO filler and promotional posts. |
-| **Briefs** | Claude writes a factual headline, a 55–65 word summary, *why it matters*, 3–4 key points, a 90–140 word background explainer and tags. It works only from the article text and is told not to invent numbers or quotes. |
-| **Sections** | Today's 5 (the daily edition), My Feed (latest), Top (importance weighted by age), Breaking, Deep Reads (expert analysis and explainers), plus one tab per topic: Models, Research, Products, Business, Policy & Safety, Open Source, Chips & Compute, Explainers. |
-| **Notifications** | **Daily edition:** one notification a day listing the 5 stories; you can limit it to certain topics or turn it off. **Continuous mode:** choose *Breaking only* (9+), *Top stories* (8+) or *Every important story* (7+). You can limit them to certain topics and set a daily cap. Quiet hours follow your own timezone, and only 9+ breaking news gets through them. Several stories at once arrive as one digest notification. |
-| **Reading** | Save stories, share them, skip ones you've read, a "N new stories" prompt, and offline reading of the last feed you loaded. Light and dark mode follow your phone. |
+- **Daily edition:** the top 5 stories of the last 24 hours, chosen at a time you set, with one notification. Set `STORIES_PER_DAY=0` for continuous mode, which instead alerts on every important story as it breaks.
+- **Curated sources:**
+  - AI labs: OpenAI, Google DeepMind, Hugging Face, Microsoft Research, NVIDIA, BAIR
+  - News desks: MIT Tech Review, The Verge, TechCrunch, Ars Technica, WIRED, VentureBeat, The Decoder
+  - Expert writers: Import AI, Simon Willison, Interconnects, Latent Space, Ahead of AI, Lil'Log
+  - Community: Hacker News (150+ points) and Medium
+- **Relevance without AI APIs:**
+  - a keyword filter drops non-AI posts
+  - the same story from several outlets is merged into one card ("+2 sources")
+  - each story gets a 0–10 importance score from source trust, coverage, newsworthiness and freshness
+  - clickbait and listicles are penalised
+- **Free summaries:** extractive summarisation picks the article's most informative sentences, plus 3 key points and tags.
+- **App features:**
+  - sections: Today's 5, My Feed, Top, Breaking, Deep Reads, and one tab per topic
+  - save stories, share them, and skip ones you've read
+  - offline reading of the last feed you loaded
+  - light and dark mode
+- **Notifications:** Web Push with topic filters, a daily cap, and quiet hours in your timezone.
 
 ## Run it locally
 
@@ -23,68 +31,100 @@ Requires Node 20+.
 
 ```bash
 npm install
-cp .env.example .env        # add your ANTHROPIC_API_KEY
-npm start                   # http://localhost:3000
+npm start          # http://localhost:3000
+npm test           # unit tests
 ```
 
-In daily-edition mode the first edition is published on the first start once `EDITION_HOUR` has passed, then once a day after that. In continuous mode the server pulls every feed on start, then every `REFRESH_MINUTES` (default 30).
+There's nothing to configure locally: data is saved as JSON files in `data/`. `npm run refresh` publishes an edition immediately.
 
-Without `ANTHROPIC_API_KEY` the app still runs, but the briefs are extractive (the first sentences of each article), relevance is scored by keywords, and there are no deep dives. Add a key for the real experience.
+## Deploy for free
 
-`npm test` runs the unit tests. `npm run refresh` runs a single fetch → brief → notify cycle and exits. In daily-edition mode it publishes an edition right away.
+| Piece | Free service |
+|---|---|
+| Web server (HTTPS) | Render free plan |
+| Database | Neon free Postgres |
+| Daily wake-up | GitHub Actions (`.github/workflows/daily-wake.yml`) |
+| Tests on every push | GitHub Actions (`.github/workflows/ci.yml`) |
 
-## Get it on your phone (with notifications)
+1. **Database:** sign up at [neon.tech](https://neon.tech), create a project, and copy the connection string (`postgres://…?sslmode=require`).
+2. **Notification keys:** run `npm run vapid` and save the two keys it prints.
+3. **Render:** at [render.com](https://render.com), choose New → Blueprint and pick this repo. Fill in:
+   - `DATABASE_URL`
+   - `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
+   - `VAPID_SUBJECT` (`mailto:` + your email)
+   - `EDITION_TIMEZONE` (e.g. `Asia/Kolkata`)
+4. **Wake-up job:** Render's free plan sleeps after 15 idle minutes. In GitHub, go to Settings → Secrets and variables → Actions → Variables and add `APP_URL` = your Render URL. Then set the cron time in `daily-wake.yml` to just after your edition hour, in UTC. The default `35 2 * * *` is 8:05 AM in India.
+5. **Phone:** open your Render URL.
+   - **Android:** tap **Install**.
+   - **iPhone:** tap **Share → Add to Home Screen** and open the app from there.
+   
+   Then tap 🔔 → **Turn on notifications** → **Send test**.
 
-Push notifications need the app served over **HTTPS**, so deploy it first:
+Free-plan trade-offs:
+- The first visit after the app has been asleep takes ~30–60 s to load.
+- GitHub pauses scheduled workflows in repos with no activity for 60 days. Push a commit, or use [cron-job.org](https://cron-job.org) to open `APP_URL/healthz` daily instead.
 
-- **Render:** push this repo to GitHub, then in Render choose **New → Blueprint** and select the repo. `render.yaml` sets up the service and a persistent disk. Fill in `ANTHROPIC_API_KEY` and the VAPID keys when asked.
-- **Any Docker host** (Fly.io, Railway, a VPS behind Caddy): `docker build -t ai-shorts . && docker run -p 3000:3000 -v ai-shorts-data:/data --env-file .env ai-shorts`
+## Architecture
 
-Generate your push (VAPID) keys once with `npm run vapid` and set them as environment variables. If they ever change, every existing subscriber silently stops receiving notifications.
+```
+            ┌─────────────── Server (Node.js + Express) ────────────────┐
+ GitHub     │ scheduler ─► fetch ~30 RSS/Atom feeds ─► AI keyword filter │
+ Actions ──►│   ─► merge duplicate stories ─► cheap pre-rank, top 15     │
+ (wake-up)  │   ─► fetch article pages ─► extractive summary + score     │
+            │   ─► pick top 5 ─► save ─► send one Web Push notification ─┼─► Google / Apple
+            │ REST API (/api/news, /api/subscribe, …)                    │   push services
+            └───────────────┬───────────────────────────┬───────────────┘        │
+                            │ JSON over HTTPS           │ SQL                    ▼
+            ┌───────────────▼────────────┐   ┌──────────▼──────────┐   phone notification
+            │ PWA on the phone           │   │ Postgres (Neon) or  │
+            │ cards, deep dive, settings │   │ JSON files locally  │
+            │ service worker: push+offline│  └─────────────────────┘
+            └────────────────────────────┘
+```
 
-Then on your phone:
+| File | Responsibility |
+|---|---|
+| `server/sources.js` | The curated feed list. Each source has a trust `weight` (1–3), and `filter: true` for feeds that aren't AI-only. Put a `data/sources.json` file in place to override the list. |
+| `server/feeds.js` | Downloads and parses RSS/Atom. Strips tracking parameters so duplicates match, finds images, and fetches article pages for the full text and `og:image`. |
+| `server/relevance.js` | AI keyword scoring, topic classification, duplicate-story clustering (headline word overlap within 72 h), and ranking for the Top tab. |
+| `server/summarize.js` | Splits text into sentences, scores them (word frequency, headline overlap, position, specifics), and assembles a ~60-word summary, key points, tags and the 0–10 importance score. |
+| `server/pipeline.js` | Orchestration: continuous refresh, or the daily edition (is it due? → gather → shortlist → brief → pick top N → save → notify). |
+| `server/push.js` | VAPID keys, which stories each subscriber should get (level, topics, cap, quiet hours), and sending encrypted Web Push messages. |
+| `server/store.js` | Key-value storage with an in-memory cache. Writes go to JSON files, or to a Postgres `app_kv` table when `DATABASE_URL` is set. |
+| `server/index.js` | Express API, static hosting of the PWA, and the scheduler. |
+| `public/app.js` | The phone UI: tabs, swipe cards, deep-dive sheet, saved stories, notification settings. |
+| `public/sw.js` | Service worker: shows notifications, opens the story on tap, and caches the app for offline use. |
 
-- **Android (Chrome):** open your URL, tap **Install app** (or ⋮ → *Add to Home screen*), open it, tap the 🔔 and choose **Turn on notifications**.
-- **iPhone (iOS 16.4+):** open your URL in Safari, tap **Share → Add to Home Screen**, then open AI Shorts *from the home screen* and tap the 🔔. iOS only allows web push for apps added to the home screen.
-
-Use **Send test** in the settings sheet to confirm alerts arrive.
+API: `GET /api/news?tab=today|top|breaking|deep|<topic>&offset=N`, `GET /api/news/:id`, `GET /api/meta`, `POST /api/subscribe`, `POST /api/unsubscribe`, `POST /api/test-push`, `POST /api/refresh` (needs `ADMIN_TOKEN`).
 
 ## Configuration
 
-All settings are environment variables (see `.env.example`):
-
 | Variable | Default | |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | – | Turns on Claude briefs and scoring |
-| `CLAUDE_MODEL` | `claude-opus-5-5` | Model that writes the briefs |
-| `CLAUDE_EFFORT` | `medium` | `low` is cheaper and faster; leave it empty for models that don't support effort |
+| `DATABASE_URL` | – | Postgres connection string; without it, data goes to files in `DATA_DIR` |
 | `STORIES_PER_DAY` | `5` | Stories in the daily edition; `0` = continuous mode |
-| `EDITION_HOUR` | `8` | Hour (0–23) the daily edition goes out |
-| `EDITION_TIMEZONE` | `UTC` | Timezone for the edition hour, e.g. `Asia/Kolkata` |
-| `SHORTLIST_SIZE` | `15` | Candidates Claude reviews to pick the day's stories |
-| `REFRESH_MINUTES` | `30` | Continuous mode: how often feeds are pulled |
-| `MAX_SUMMARIES_PER_RUN` | `15` | Continuous mode: cap on new briefs per refresh |
-| `MIN_RELEVANCE` | `5` | Stories below this score are hidden |
+| `EDITION_HOUR` / `EDITION_TIMEZONE` | `8` / `UTC` | When the edition is published |
+| `SHORTLIST_SIZE` | `15` | Candidates read in full before picking the day's stories |
+| `MIN_RELEVANCE` | `5` | Stories scoring below this are hidden |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | auto | Web Push identity |
-| `ADMIN_TOKEN` | – | Enables `POST /api/refresh` with `Authorization: Bearer <token>` |
-| `DATA_DIR` | `./data` | Where articles, subscriptions and keys are stored (JSON files) |
+| `REFRESH_MINUTES` / `MAX_SUMMARIES_PER_RUN` | `30` / `15` | Continuous mode only |
+| `ADMIN_TOKEN` | – | Enables `POST /api/refresh` |
 
-**Changing sources:** put a JSON array in `data/sources.json` and it replaces the built-in list. The entries use the same shape as `server/sources.js`: `{ id, name, url, kind, weight, filter }`.
+## Ideas to build next
 
-**Cost:** each brief is one Claude request. In daily-edition mode Claude reviews `SHORTLIST_SIZE` (15) stories a day to choose the 5. That's roughly **$0.50–0.70 a day** on `claude-opus-5-5`, or about **$0.10 a day** with `CLAUDE_MODEL=claude-haiku-4-5`. Lower `SHORTLIST_SIZE` to spend less. Continuous mode briefs many more stories, roughly $5–10 a day. Requests use server-side refusal fallback, and any failed request falls back to an extractive brief, so the feed never stalls.
+Each of these is a self-contained project that makes a good resume bullet:
 
-## How it's built
+- **Better summaries, still free:** implement TextRank (a graph of sentences scored PageRank-style), or run a small open-source summarisation model in Node with `transformers.js`.
+- **Personalised ranking:** learn from what each user reads, saves and skips, and boost their topics and sources in My Feed.
+- **Accounts and sync:** sign-in (e.g. email magic links) so saved stories and settings follow you across devices.
+- **Search:** Postgres full-text search over past stories.
+- **Better duplicate detection:** TF-IDF or MinHash similarity instead of headline word overlap.
+- **App stores:** wrap the PWA with Bubblewrap (Google Play) or Capacitor (iOS App Store).
+- **Admin dashboard:** source health, failed feeds, edition history, subscriber count.
+- **Analytics:** privacy-friendly open and click-through rates per edition.
 
-```
-server/
-  index.js      Express API + static hosting + refresh scheduler
-  pipeline.js   fetch → filter → dedupe/cluster → prioritise → brief → store → notify
-  feeds.js      RSS/Atom parsing, article page fetch (og:image + body text)
-  relevance.js  AI keyword scoring, categories, story clustering, ranking
-  summarize.js  Claude brief (structured JSON output) with extractive fallback
-  push.js       Web Push (VAPID), per-subscriber selection, quiet hours, caps
-  store.js      atomic JSON-file storage
-public/         the PWA: swipe cards, deep-dive sheet, settings, service worker
-```
+## Before selling it
 
-API: `GET /api/news?tab=top|breaking|deep|<category>&offset=N`, `GET /api/news/:id`, `GET /api/meta`, `POST /api/subscribe`, `POST /api/unsubscribe`, `POST /api/test-push`.
+- **Content rights:** summarising articles and showing their images commercially needs care. Link back prominently (the app does), avoid copying long passages, and check each source's terms. News aggregators often license content or use only headlines and their own summaries.
+- **Privacy:** push subscriptions are personal data. Publish a privacy policy and let users delete their data.
+- **Paid hosting:** free tiers sleep and have limits. Budget for a small paid plan once you have users.

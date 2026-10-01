@@ -1,0 +1,26 @@
+# Render's free plan puts the app to sleep after 15 minutes without visitors,
+# and a sleeping app can't publish the daily edition. This job opens the app
+# shortly after EDITION_HOUR every day; on wake-up the app sees the edition is
+# due and publishes it.
+#
+# Setup: in GitHub go to Settings → Secrets and variables → Actions →
+# Variables, and add APP_URL (e.g. https://ai-shorts.onrender.com).
+# Then edit the cron line below. Cron times are in UTC:
+# 8:00 AM India time (IST, UTC+5:30) = 02:30 UTC → "35 2 * * *".
+name: Daily wake-up
+
+on:
+  schedule:
+    - cron: "35 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    if: ${{ vars.APP_URL != '' }}
+    steps:
+      - name: Wake the app
+        # A cold start on the free plan can take about a minute.
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 20 --retry-all-errors --max-time 120 "${{ vars.APP_URL }}/healthz"
+      - name: Give the edition time to finish
+        run: sleep 90 && curl --fail --silent "${{ vars.APP_URL }}/api/meta" | head -c 400
