@@ -24,7 +24,7 @@ const store = {
 
 const state = {
   meta: null,
-  tab: store.get('tab', 'all'),
+  tab: store.get('tab', null) || 'all',
   items: [],
   total: 0,
   loading: false,
@@ -85,6 +85,7 @@ const categoryLabel = (c) => state.meta?.categories?.[c] || c;
 // ---------- tabs ----------
 function renderTabs() {
   const tabs = [
+    ...(state.meta.edition ? [['today', `Today's ${state.meta.edition.perDay}`]] : []),
     ['all', 'My Feed'],
     ['top', 'Top'],
     ['breaking', 'Breaking'],
@@ -176,7 +177,9 @@ function visibleItems() {
 function renderFeed() {
   const list = visibleItems();
   if (!list.length) {
-    let msg = 'No stories here yet. New AI news is pulled every 30 minutes.';
+    let msg = state.meta?.edition
+      ? `No stories here yet. Today's ${state.meta.edition.perDay} stories are published at ${state.meta.edition.hour}:00 (${state.meta.edition.timezone}).`
+      : 'No stories here yet. New AI news is pulled every 30 minutes.';
     if (state.view === 'saved') msg = 'Nothing saved yet. Tap the bookmark on any story to keep it here.';
     else if (state.loading) msg = 'Loading the latest AI news…';
     else if (state.hideRead && state.items.length) msg = "You're all caught up. 🎉";
@@ -415,7 +418,14 @@ async function refreshPushUi() {
     status.textContent = 'Notifications are blocked. Allow them for this site in your browser or phone settings, then come back.';
     $('#enablePush').hidden = true;
   } else {
-    status.textContent = sub ? "Notifications are on. We'll only ping you for stories that clear your bar." : 'Get a phone alert when important AI news breaks.';
+    const ed = state.meta.edition;
+    status.textContent = sub
+      ? ed
+        ? `Notifications are on. You'll get one alert a day with the ${ed.perDay} stories.`
+        : "Notifications are on. We'll only ping you for stories that clear your bar."
+      : ed
+        ? `Get one notification a day with the ${ed.perDay} most important AI stories.`
+        : 'Get a phone alert when important AI news breaks.';
     $('#enablePush').hidden = false;
     $('#enablePush').textContent = sub ? 'Save preferences' : 'Turn on notifications';
   }
@@ -491,7 +501,18 @@ function buildSettings() {
       el('button', { 'data-topic': id, text: label, onclick: (e) => e.currentTarget.classList.toggle('on') }),
     ),
   );
-  fillPrefsForm({ ...state.meta.defaultPrefs, ...(state.prefs || {}) });
+  const ed = state.meta.edition;
+  if (ed) {
+    const at = new Date(2000, 0, 1, ed.hour).toLocaleTimeString([], { hour: 'numeric' });
+    $('#level').replaceChildren(
+      el('option', { value: 'top', text: `Daily edition: ${ed.perDay} stories at ${at} (${ed.timezone})` }),
+      el('option', { value: 'off', text: 'Nothing (off)' }),
+    );
+    $('#maxPerDay').closest('.row').hidden = true;
+  }
+  const saved = { ...state.meta.defaultPrefs, ...(state.prefs || {}) };
+  if (ed && saved.level !== 'off') saved.level = 'top';
+  fillPrefsForm(saved);
   $('#hideRead').checked = state.hideRead;
   const lr = state.meta.lastRefresh;
   $('#aboutLine').textContent = `Briefs written by ${state.meta.claude ? 'Claude' : 'extractive summaries (add an Anthropic API key for Claude briefs)'}${
@@ -523,7 +544,9 @@ async function boot() {
     feedEl.replaceChildren(emptyCard("Can't reach the server. Check your connection."));
     return;
   }
-  if (state.tab !== 'all' && !['top', 'breaking', 'deep'].includes(state.tab) && !state.meta.categories[state.tab]) state.tab = 'all';
+  const fixedTabs = ['all', 'top', 'breaking', 'deep', ...(state.meta.edition ? ['today'] : [])];
+  if (!store.get('tab', null) && state.meta.edition) state.tab = 'today';
+  if (!fixedTabs.includes(state.tab) && !state.meta.categories[state.tab]) state.tab = state.meta.edition ? 'today' : 'all';
   renderTabs();
   buildSettings();
   await loadFeed(true);

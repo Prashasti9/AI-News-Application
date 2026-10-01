@@ -1,7 +1,7 @@
 import path from 'node:path';
 import express from 'express';
 import { config } from './config.js';
-import { refresh } from './pipeline.js';
+import { refresh, runEditionIfDue } from './pipeline.js';
 import { DEFAULT_PREFS, LEVELS, getVapidPublicKey, initPush, sendTo } from './push.js';
 import { CATEGORIES, rankScore } from './relevance.js';
 import { articles, kv, subscriptions } from './store.js';
@@ -21,6 +21,10 @@ function publicArticle(a) {
 function filterByTab(list, tab) {
   const dayAgo = Date.now() - 48 * 3600e3;
   switch (tab) {
+    case 'today': {
+      const latest = list.reduce((max, a) => (a.edition && a.edition > max ? a.edition : max), '');
+      return list.filter((a) => a.edition && a.edition === latest).sort((a, b) => a.editionRank - b.editionRank);
+    }
     case 'top':
       return [...list].sort((a, b) => rankScore(b) - rankScore(a));
     case 'breaking':
@@ -44,6 +48,7 @@ app.get('/api/meta', (_req, res) => {
     vapidPublicKey: getVapidPublicKey(),
     claude: claudeEnabled(),
     lastRefresh: kv.get('last-refresh', null),
+    edition: config.storiesPerDay > 0 ? { perDay: config.storiesPerDay, hour: config.editionHour, timezone: config.editionTimezone } : null,
   });
 });
 
@@ -138,7 +143,7 @@ app.post('/api/test-push', async (req, res) => {
 
 app.post('/api/refresh', async (req, res) => {
   if (!config.adminToken || req.get('authorization') !== `Bearer ${config.adminToken}`) return res.status(401).json({ error: 'unauthorized' });
-  res.json(await refresh());
+  res.json(config.storiesPerDay > 0 ? await runEditionIfDue({ force: true }) : await refresh());
 });
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
@@ -153,8 +158,12 @@ app.use(express.static(publicDir, { maxAge: '1h' }));
 initPush();
 app.listen(config.port, () => {
   console.log(`AI News Shorts on http://localhost:${config.port} (Claude briefs: ${claudeEnabled() ? config.claudeModel : 'off — set ANTHROPIC_API_KEY'})`);
+  if (config.storiesPerDay > 0) console.log(`Daily edition: top ${config.storiesPerDay} stories at ${config.editionHour}:00 ${config.editionTimezone}`);
 });
 
-const tick = () => refresh().catch((err) => console.error('[refresh] failed:', err));
+const editionMode = config.storiesPerDay > 0;
+const tick = () =>
+  (editionMode ? runEditionIfDue() : refresh()).catch((err) => console.error('[refresh] failed:', err));
 tick();
-setInterval(tick, config.refreshMinutes * 60e3);
+// In edition mode, check every 10 minutes whether today's edition is due.
+setInterval(tick, (editionMode ? 10 : config.refreshMinutes) * 60e3);

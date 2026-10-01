@@ -124,3 +124,36 @@ export async function notifySubscribers(newArticles, log = console) {
   if (sentLogs.size || expired.size) log.info?.(`[push] sent ${sentLogs.size} notification(s), removed ${expired.size} expired subscription(s)`);
   return { sent: sentLogs.size, removed: expired.size };
 }
+
+export function editionPayload(stories) {
+  return {
+    title: `Your ${stories.length} AI ${stories.length === 1 ? 'story' : 'stories'} for today`,
+    body: stories.map((a) => `• ${a.headline}`).join('\n'),
+    url: `/?story=${stories[0].id}`,
+    image: stories.find((a) => a.image)?.image,
+    tag: `edition-${stories[0].edition || 'today'}`,
+  };
+}
+
+/** Daily-edition mode: one notification per subscriber listing the day's stories. */
+export async function notifyEdition(stories, log = console) {
+  if (!stories.length) return { sent: 0, removed: 0 };
+  const expired = new Set();
+  let sent = 0;
+  for (const sub of subscriptions.all()) {
+    const prefs = { ...DEFAULT_PREFS, ...sub.prefs };
+    if (prefs.level === 'off') continue;
+    const mine = prefs.topics.length ? stories.filter((a) => prefs.topics.includes(a.category)) : stories;
+    if (!mine.length) continue;
+    try {
+      await sendTo(sub, editionPayload(mine));
+      sent++;
+    } catch (err) {
+      if (err.statusCode === 404 || err.statusCode === 410) expired.add(sub.endpoint);
+      else log.warn?.(`[push] ${err.statusCode || ''} ${err.message}`);
+    }
+  }
+  if (expired.size) subscriptions.save(subscriptions.all().filter((s) => !expired.has(s.endpoint)));
+  log.info?.(`[push] edition sent to ${sent} subscriber(s)`);
+  return { sent, removed: expired.size };
+}

@@ -23,5 +23,9 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         value: mailto:you@example.com
-      - key: REFRESH_MINUTES
-        value: "30"
+      - key: STORIES_PER_DAY
+        value: "5"
+      - key: EDITION_HOUR
+        value: "8"
+      - key: EDITION_TIMEZONE
+        sync: false # e.g. Asia/Kolkata
