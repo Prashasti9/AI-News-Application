@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+  <title>Example AI Desk</title>
+  <item>
+    <title>OpenAI releases GPT-6 with a 2M-token context window</title>
+    <link>https://news.example.com/openai-gpt-6?utm_source=rss&amp;utm_medium=feed</link>
+    <pubDate>Wed, 01 Oct 2026 14:00:00 GMT</pubDate>
+    <dc:creator>Jane Reporter</dc:creator>
+    <media:content url="https://cdn.example.com/gpt6.jpg" medium="image"/>
+    <content:encoded><![CDATA[<p>OpenAI on Wednesday released GPT-6, a new large language model that it says can read up to two million tokens at once.</p><p>The model is available to paying users today &amp; via the API.</p>]]></content:encoded>
+  </item>
+  <item>
+    <title>Ten gardening tips for autumn</title>
+    <link>https://news.example.com/gardening</link>
+    <pubDate>Wed, 01 Oct 2026 12:00:00 GMT</pubDate>
+    <description>Plant bulbs now for spring colour.</description>
+  </item>
+</channel>
+</rss>

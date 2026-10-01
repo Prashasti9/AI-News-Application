@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI Shorts</title>
+  <meta name="description" content="The latest, most relevant AI news in 60-word cards." />
+  <meta name="theme-color" content="#0b0b12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="AI Shorts" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="/icons/icon-192.png" alt="" /><span>AI Shorts</span></div>
+    <div class="actions">
+      <button id="bookmarksBtn" class="icon-btn" aria-label="Saved stories" title="Saved">
+        <svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>
+      </button>
+      <button id="settingsBtn" class="icon-btn" aria-label="Notifications and settings" title="Settings">
+        <svg viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1z"/></svg>
+        <span id="bellDot" class="dot" hidden></span>
+      </button>
+    </div>
+  </header>
+  <nav id="tabs" class="tabs" aria-label="Sections"></nav>
+
+  <main id="feed" class="feed" aria-live="polite"></main>
+  <button id="newPill" class="new-pill" hidden>↑ New stories</button>
+  <div id="progress" class="progress"></div>
+
+  <!-- Deep dive sheet -->
+  <div id="sheet" class="sheet" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <article class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div class="grabber" data-close></div>
+      <div id="sheetContent"></div>
+    </article>
+  </div>
+
+  <!-- Settings sheet -->
+  <div id="settings" class="sheet" hidden>
+    <div class="sheet-backdrop" data-close></div>
+    <section class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="grabber" data-close></div>
+      <h2 id="settingsTitle">Notifications</h2>
+      <p id="pushStatus" class="muted"></p>
+      <div id="iosHint" class="hint" hidden>
+        On iPhone, notifications work once the app is on your Home Screen: tap <b>Share</b> → <b>Add to Home Screen</b>, then open AI Shorts from there.
+      </div>
+      <label class="field">Alert me for
+        <select id="level">
+          <option value="breaking">Breaking news only</option>
+          <option value="top">Top stories</option>
+          <option value="all">Every important story</option>
+          <option value="off">Nothing (off)</option>
+        </select>
+      </label>
+      <div class="field">Topics <span class="muted">(none selected = everything)</span>
+        <div id="topicChips" class="chips"></div>
+      </div>
+      <div class="row">
+        <label class="field">Max alerts / day <input id="maxPerDay" type="number" min="1" max="30" /></label>
+        <label class="field">Quiet from <select id="quietStart"></select></label>
+        <label class="field">to <select id="quietEnd"></select></label>
+      </div>
+      <div class="row buttons">
+        <button id="enablePush" class="primary">Turn on notifications</button>
+        <button id="testPush" class="ghost" hidden>Send test</button>
+        <button id="disablePush" class="ghost" hidden>Turn off</button>
+      </div>
+      <h2>Reading</h2>
+      <label class="switch"><input id="hideRead" type="checkbox" /> Skip stories I've already read</label>
+      <p class="muted small" id="aboutLine"></p>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <template id="cardTpl">
+    <section class="card">
+      <div class="media"><img alt="" loading="lazy" referrerpolicy="no-referrer" /><span class="cat"></span></div>
+      <div class="content">
+        <h1 class="headline"></h1>
+        <p class="summary"></p>
+        <p class="byline"></p>
+        <div class="card-actions">
+          <button class="deep">Deep dive</button>
+          <button class="icon-btn save" aria-label="Save"><svg viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg></button>
+          <button class="icon-btn share" aria-label="Share"><svg viewBox="0 0 24 24"><path d="M18 16a3 3 0 0 0-2.4 1.2l-6.7-3.4a3 3 0 0 0 0-1.6l6.7-3.4A3 3 0 1 0 15 7l-6.7 3.4a3 3 0 1 0 0 3.2L15 17a3 3 0 1 0 3-1z"/></svg></button>
+        </div>
+      </div>
+      <a class="footer" target="_blank" rel="noopener"></a>
+    </section>
+  </template>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

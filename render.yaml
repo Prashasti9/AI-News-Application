@@ -1,0 +1,27 @@
+# One-click deploy on Render (https://render.com): New → Blueprint → pick this repo.
+# Push notifications need HTTPS, which Render provides automatically.
+services:
+  - type: web
+    name: ai-shorts
+    runtime: node
+    plan: starter # a persistent disk needs a paid instance
+    buildCommand: npm ci --omit=dev
+    startCommand: node server/index.js
+    healthCheckPath: /healthz
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:you@example.com
+      - key: REFRESH_MINUTES
+        value: "30"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Blog</title>
+  <entry>
+    <title>Understanding mixture-of-experts LLMs</title>
+    <link rel="alternate" href="https://blog.example.com/moe/"/>
+    <published>2026-09-30T08:00:00Z</published>
+    <author><name>Sam Writer</name></author>
+    <content type="html">&lt;p&gt;Mixture-of-experts models route each token to a few expert networks.&lt;/p&gt;&lt;img src="https://blog.example.com/moe.png"&gt;</content>
+  </entry>
+</feed>
