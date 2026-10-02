@@ -1,0 +1,9 @@
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+feedparser==6.0.14
+beautifulsoup4==4.15.0
+pywebpush==2.5.0
+psycopg[binary]==3.3.6
+pydantic-settings==2.15.0
+tzdata==2026.4  # timezone data, needed on Windows
