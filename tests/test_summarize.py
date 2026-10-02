@@ -57,3 +57,14 @@ def test_breaking_needs_coverage_and_high_score():
     brief = write_brief("OpenAI releases GPT-6 language model", ARTICLE, "X", 3, "news", coverage=3)
     assert brief.is_ai_news and brief.category == "models"
     assert brief.relevance >= 8 and brief.breaking
+
+
+def test_repeated_site_text_is_ignored():
+    widget = "Posts from this topic will be added to your daily email digest and your homepage feed."
+    body = "\n".join([widget] * 3 + [
+        "OpenAI launched a new consumer AI agent on Tuesday that can book reservations and shop for users.",
+        "The agent competes directly with Meta's free assistant built into WhatsApp and Instagram.",
+    ])
+    summary, _ = summarize("OpenAI's new agent is a shot at Meta", body)
+    assert summary.startswith("OpenAI launched a new consumer AI agent")
+    assert "email digest" not in summary
