@@ -28,7 +28,8 @@ STOP_WORDS = set(
 BOILERPLATE = re.compile(
     r"(subscribe|sign up|newsletter|cookie|all rights reserved|click here|read more|continue reading|"
     r"appeared first on|originally (appeared|published)|follow us|share this|image credit|photo:|"
-    r"getty images|advertisement|sponsored|this story has been updated)",
+    r"getty images|advertisement|sponsored|this story has been updated|"
+    r"will be added to your|email digest|homepage feed|posts from this)",
     re.I,
 )
 
@@ -78,7 +79,18 @@ class ScoredSentence:
 
 
 def score_sentences(title: str, body: str) -> list[ScoredSentence]:
-    sentences = [s for s in split_sentences(body) if 6 <= len(s.split()) <= 60 and not BOILERPLATE.search(s)]
+    all_sentences = split_sentences(body)
+    # A sentence that appears more than once on a page is site furniture
+    # ("Posts from this topic will be added to..."), not reporting. Drop every
+    # copy, otherwise the repetition makes it look like the most important line.
+    counts: dict[str, int] = {}
+    for s in all_sentences:
+        counts[s.lower()] = counts.get(s.lower(), 0) + 1
+    sentences = [
+        s
+        for s in all_sentences
+        if counts[s.lower()] == 1 and 6 <= len(s.split()) <= 60 and not BOILERPLATE.search(s)
+    ]
 
     frequency: dict[str, int] = {}
     for sentence in sentences:
