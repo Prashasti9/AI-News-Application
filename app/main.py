@@ -257,3 +257,6 @@ def service_worker():
 # Mounted last so the /api routes above take priority. html=True serves
 # index.html for "/".
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+
+# httpx logs every page it downloads; only show problems.
+logging.getLogger("httpx").setLevel(logging.WARNING)

@@ -6,12 +6,12 @@
 # Setup: in GitHub go to Settings → Secrets and variables → Actions →
 # Variables, and add APP_URL (e.g. https://ai-shorts.onrender.com).
 # Then edit the cron line below. Cron times are in UTC:
-# 8:00 AM India time (IST, UTC+5:30) = 02:30 UTC → "35 2 * * *".
+# 8:00 AM India time (IST, UTC+5:30) = 02:30 UTC → "5 16 * * *".
 name: Daily wake-up
 
 on:
   schedule:
-    - cron: "35 2 * * *"
+    - cron: "5 16 * * *"
   workflow_dispatch:
 
 jobs:

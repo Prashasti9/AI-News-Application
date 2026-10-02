@@ -175,3 +175,11 @@ async def fetch_article_details(client: httpx.AsyncClient, url: str) -> dict:
         "description": meta("og:description") or meta("description"),
         "text": text[:12000],
     }
+
+
+# Some feeds have a description that is only a URL; Beautiful Soup warns
+# that it looks like a filename. Harmless, so hide it.
+import warnings
+from bs4 import MarkupResemblesLocatorWarning
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
